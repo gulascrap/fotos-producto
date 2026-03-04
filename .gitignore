@@ -1,1 +1,24 @@
 node_modules\n.next
+node_modules
+node_modules
+cat > lib/drive.ts << 'EOF'
+// Drive upload disabled - using direct download instead
+export async function uploadImageToDrive(
+  imageBase64: string,
+  fileName: string,
+  folderId: string
+): Promise<{ id: string; webViewLink: string; webContentLink: string }> {
+  // Return base64 as data URL for direct download
+  return {
+    id: fileName,
+    webViewLink: `data:image/jpeg;base64,${imageBase64}`,
+    webContentLink: `data:image/jpeg;base64,${imageBase64}`,
+  };
+}
+
+export async function createDriveFolder(name: string, parentFolderId: string): Promise<string> {
+  return parentFolderId;
+}
+EOF
+git add . && git commit -m "fix: direct download instea
+d of drive" && git push && echo "LISTO"
