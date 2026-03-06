@@ -3,24 +3,45 @@ export async function generateProductImage(
   imageMimeType: string,
   prompt: string
 ): Promise<string> {
-  const apiKey = process.env.GEMINI_API_KEY!;
-  
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        instances: [{ prompt: `Professional product photography. ${prompt}` }],
-        parameters: { sampleCount: 1, aspectRatio: '1:1' }
-      })
-    }
-  );
+  const apiKey = process.env.REPLICATE_API_KEY!;
+  const imageDataUrl = `data:${imageMimeType};base64,${imageBase64}`;
 
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error?.message || 'Error Imagen 3');
+  const createRes = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-1.1-pro/predictions', {
+    method: 'POST',
+    headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json', 'Prefer': 'wait' },
+    body: JSON.stringify({
+      input: {
+        prompt: `Professional product photography, ${prompt}, photorealistic, high quality, studio lighting, clean background`,
+        image: imageDataUrl,
+        prompt_upsampling: true,
+        output_format: 'jpg',
+        output_quality: 90,
+      }
+    })
+  });
+
+  const prediction = await createRes.json();
+  if (prediction.error) throw new Error(prediction.error);
+
+  let output = prediction.output;
   
-  const imageBytes = data.predictions?.[0]?.bytesBase64Encoded;
-  if (!imageBytes) throw new Error('No se generó imagen');
-  return imageBytes;
+  if (!output) {
+    const id = prediction.id;
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      const pollRes = await fetch(`https://api.replicate.com/v1/predictions/${id}`, {
+        headers: { 'Authorization': `Bearer ${apiKey}` }
+      });
+      const poll = await pollRes.json();
+      if (poll.status === 'succeeded') { output = poll.output; break; }
+      if (poll.status === 'failed') throw new Error(poll.error || 'Flux falló');
+    }
+  }
+
+  if (!output) throw new Error('Timeout generando imagen');
+
+  const imageUrl = Array.isArray(output) ? output[0] : output;
+  const imgRes = await fetch(imageUrl);
+  const buffer = await imgRes.arrayBuffer();
+  return Buffer.from(buffer).toString('base64');
 }
