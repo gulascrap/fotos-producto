@@ -60,7 +60,7 @@ export default function Dashboard({ styles }: { styles: typeof STYLES }) {
   }
 
   async function handleGenerate() {
-    if (!image || !productName.trim()) { setError('Completá el nombre del producto y subí una imagen'); return; }
+    if (!image) { setError('Subí una imagen para continuar'); return; }
     setLoading(true); setError(''); setResults(null); setProgress(0);
     const progressInterval = setInterval(() => setProgress(prev => Math.min(prev + (100 / (totalImages * 15)), 90)), 1000);
     const formData = new FormData();
