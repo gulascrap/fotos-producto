@@ -8,12 +8,13 @@
     "start": "next start"
   },
   "dependencies": {
-    "next": "14.2.5",
-    "react": "^18",
-    "react-dom": "^18",
+    "@google/genai": "^1.44.0",
     "@google/generative-ai": "^0.21.0",
     "googleapis": "^144.0.0",
     "jose": "^5.9.6",
+    "next": "14.2.5",
+    "react": "^18",
+    "react-dom": "^18",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
