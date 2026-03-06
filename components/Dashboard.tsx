@@ -228,7 +228,7 @@ export default function Dashboard({ styles }: { styles: typeof STYLES }) {
                   )}
                   {result.status === 'done' && (
                     <>
-                      <img src={`data:image/jpeg;base64,${result.imageBase64}`} alt={`${result.style} ${result.index}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} />
+                      <img src={result.imageBase64 ? `data:image/jpeg;base64,${result.imageBase64}` : ""} alt={`${result.style} ${result.index}`} style={{ width: '100%', aspectRatio: '9/16', objectFit: 'cover' }} />
                       <div style={{ padding: '12px' }}>
                         <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>{styles[result.style as StyleKey]?.label} — Var. {result.index}</p>
                         <button onClick={() => downloadImage(result.imageBase64, result.fileName)} style={{ width: '100%', padding: '8px', background: 'rgba(107,255,218,0.08)', border: '1px solid rgba(107,255,218,0.2)', borderRadius: '8px', color: '#6bffda', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>⬇ Descargar</button>
