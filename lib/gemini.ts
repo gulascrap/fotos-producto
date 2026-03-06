@@ -7,23 +7,25 @@ export async function generateProductImage(
   imageMimeType: string,
   prompt: string
 ): Promise<string> {
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp-image-generation' });
+  const model = genAI.getGenerativeModel({ model: 'imagen-3.0-capability-001' });
 
-  const result = await model.generateContent({
-    contents: [{
-      role: 'user',
-      parts: [
-        { inlineData: { data: imageBase64, mimeType: imageMimeType as any } },
-        { text: `Professional product photographer. Transform this product: ${prompt}. Keep the product EXACTLY as is, only change background. Output high-quality photorealistic image.` },
-      ],
-    }],
-    generationConfig: { responseModalities: ['IMAGE', 'TEXT'] } as any,
+  // @ts-ignore
+  const result = await model.generateImages({
+    prompt: `Professional product photography. ${prompt}`,
+    numberOfImages: 1,
+    aspectRatio: '1:1',
+    personGeneration: 'dont_allow',
+    referenceImages: [{
+      referenceType: 'REFERENCE_TYPE_SUBJECT',
+      referenceId: 1,
+      referenceImage: {
+        imageBytes: imageBase64,
+        mimeType: imageMimeType,
+      }
+    }]
   });
 
-  for (const part of result.response.candidates?.[0]?.content?.parts || []) {
-    if ((part as any).inlineData?.mimeType?.startsWith('image/')) {
-      return (part as any).inlineData.data;
-    }
-  }
-  throw new Error('No image generated');
+  const imageBytes = result?.generatedImages?.[0]?.image?.imageBytes;
+  if (!imageBytes) throw new Error('Imagen 3 no generó ninguna imagen');
+  return imageBytes;
 }
