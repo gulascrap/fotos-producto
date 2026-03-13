@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateProductImage } from '@/lib/gemini';
 import { buildPrompt, Style } from '@/lib/prompts';
 import { getSession } from '@/lib/auth';
 
@@ -22,17 +21,31 @@ export async function POST(request: NextRequest) {
   const imageMimeType = image.type || 'image/jpeg';
   const prompt = buildPrompt(style, '');
 
-  try {
-    const generatedBase64 = await generateProductImage(imageBase64, imageMimeType, prompt);
-    const baseName = productName || image.name.replace(/\.[^.]+$/, '');
-    return NextResponse.json({
-      success: true,
-      imageBase64: generatedBase64,
-      fileName: `${baseName}_${style}_v${index}.jpg`,
-      style,
-      index
-    });
-  } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Error' }, { status: 500 });
-  }
+  const res = await fetch('https://api.replicate.com/v1/models/black-forest-labs/flux-kontext-max/predictions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.REPLICATE_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      input: {
+        prompt: `Professional product photography. ${prompt}. Keep the product exactly as shown in the reference image.`,
+        input_image: `data:${imageMimeType};base64,${imageBase64}`,
+        output_format: 'jpg',
+        output_quality: 90,
+        aspect_ratio: '9:16',
+      }
+    })
+  });
+
+  const prediction = await res.json();
+  if (!prediction.id) return NextResponse.json({ error: prediction.error || prediction.detail || JSON.stringify(prediction) }, { status: 500 });
+
+  const baseName = productName || image.name.replace(/\.[^.]+$/, '');
+  return NextResponse.json({
+    predictionId: prediction.id,
+    fileName: `${baseName}_${style}_v${index}.jpg`,
+    style,
+    index
+  });
 }
